@@ -19,8 +19,6 @@
 
 package org.apache.druid.msq.indexing;
 
-import java.io.File;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.druid.frame.key.ClusterByPartitions;
 import org.apache.druid.indexer.TaskStatus;
@@ -53,6 +51,7 @@ import org.mockito.MockitoAnnotations;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
 
