@@ -19,6 +19,8 @@
 
 package org.apache.druid.msq.indexing;
 
+import java.io.File;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.druid.frame.key.ClusterByPartitions;
 import org.apache.druid.indexer.TaskStatus;
@@ -96,6 +98,12 @@ public class WorkerChatHandlerTest
                            public void setObjectMapper(ObjectMapper objectMapper)
                            {
 
+                           }
+
+                           @Override
+                           public File getReportsFile(String taskId)
+                           {
+                             return null;
                            }
                          }
                      )
