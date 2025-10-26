@@ -195,7 +195,7 @@ public class KubernetesPeonLifecycle
       return getTaskStatus(jobResponse.getJobDuration());
     }
     finally {
-      log.info("🔧 [LIFECYCLE] Task [%s] join() finally block - will save logs and reports", taskId.getOriginalTaskId());
+      log.info("🔧 [LIFECYCLE] Task [%s] join() finally block - will save logs", taskId.getOriginalTaskId());
       try {
         log.info("📋 [LIFECYCLE] Attempting to save logs for task [%s]...", taskId.getOriginalTaskId());
         saveLogs();
@@ -203,15 +203,6 @@ public class KubernetesPeonLifecycle
       }
       catch (Exception e) {
         log.warn(e, "❌ [LIFECYCLE] Log processing failed for task [%s]", taskId);
-      }
-
-      try {
-        log.info("📊 [LIFECYCLE] Attempting to save reports for task [%s]...", taskId.getOriginalTaskId());
-        saveReports();
-        log.info("✅ [LIFECYCLE] Successfully saved reports for task [%s]", taskId.getOriginalTaskId());
-      }
-      catch (Exception e) {
-        log.warn(e, "❌ [LIFECYCLE] Report processing failed for task [%s]", taskId);
       }
 
       stopTask();
@@ -385,24 +376,6 @@ public class KubernetesPeonLifecycle
     catch (IOException e) {
       log.warn(e, "❌ [LOGS] Failed to manage temporary log file for task [%s]", taskId.getOriginalTaskId());
     }
-  }
-
-  protected void saveReports()
-  {
-    log.warn("📊 [REPORTS] ⚠️  Report persistence NOT IMPLEMENTED in Druid 30.0.0!");
-    log.warn("📊 [REPORTS] Task [%s] reports will be LOST after pod termination", taskId.getOriginalTaskId());
-    log.warn("📊 [REPORTS] Reports are only accessible via HTTP while pod is running");
-    log.warn("📊 [REPORTS] After pod deletion, GET /druid/indexer/v1/task/%s/reports will return 404", taskId.getOriginalTaskId());
-    log.warn("📊 [REPORTS] To fix: Implement report fetching + push to deep storage (similar to saveLogs())");
-    log.warn("📊 [REPORTS] Task location: %s", taskLocation != null ? taskLocation : "UNKNOWN");
-    
-    // TODO: Implement report persistence
-    // This would require:
-    // 1. HTTP client to fetch reports from pod
-    // 2. Fetch from: http://${taskLocation}/druid/worker/v1/chat/${taskId}/liveReports
-    // 3. Save to temp file
-    // 4. Push to deep storage via taskLogs (requires new method or hack)
-    // 5. Update Overlord to check deep storage for reports after task completion
   }
 
   private void stopTask()
