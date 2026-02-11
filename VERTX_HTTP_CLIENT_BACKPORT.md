@@ -187,18 +187,28 @@ cd /Users/ronshub/workspace/druid
 ./apache-maven-3.9.11/bin/mvn -pl extensions-contrib/kubernetes-overlord-extensions -am clean package -DskipTests
 ```
 
-### Step 2: Copy JAR to Deployment
+### Step 2: Copy JAR and Runtime Dependencies to Deployment
+
+The Vertx HTTP client adds new runtime dependencies that are **not** bundled into the extension JAR.
+If you only copy the JAR, the Overlord will fail with `NoClassDefFoundError: io/vertx/core/VertxOptions`.
+
+After `mvn package`, runtime dependencies are copied into:
+```
+extensions-contrib/kubernetes-overlord-extensions/target/dependency/
+```
+
+You must copy **both** the extension JAR and the dependency JARs to the Overlord.
 
 The built JAR is located at:
 ```
 extensions-contrib/kubernetes-overlord-extensions/target/druid-kubernetes-overlord-extensions-30.0.0.jar
 ```
 
-Copy this JAR to your Druid deployment's extensions directory, replacing the existing one.
+Copy the JAR **and** all files from `target/dependency/` to your Druid deployment's extensions directory.
 
 ### Step 3: Deploy to Staging/Test Environment
 
-1. Deploy the updated JAR to the staging Overlord
+1. Deploy the updated JAR and dependency JARs to the staging Overlord
 2. Restart the Overlord service
 3. Check Overlord logs for Vertx initialization messages (see Logging section above)
 
