@@ -1,0 +1,76 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements. See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Kubernetes label regression tests
+
+on:
+  pull_request:
+    branches: [singular-druid-30-changes]
+    paths:
+      - extensions-contrib/kubernetes-overlord-extensions/**
+      - .github/workflows/kubernetes-label-tests.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kubernetes-label-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+          cache: maven
+      - name: Build module and reactor dependencies
+        run: >-
+          mvn -B -pl extensions-contrib/kubernetes-overlord-extensions -am install
+          -Pskip-static-checks,skip-tests -Dweb.console.skip=true
+          -Dmaven.javadoc.skip=true -Dcyclonedx.skip=true
+      - name: Test label normalization and pod template integration
+        run: >-
+          mvn -B -pl extensions-contrib/kubernetes-overlord-extensions test
+          -Dtest=KubernetesOverlordUtilsTest,PodTemplateTaskAdapterTest
+          -Pskip-static-checks -Dweb.console.skip=true -Dmaven.javadoc.skip=true
+          -Dcyclonedx.skip=true
+      - name: Verify both test classes executed
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          reports = Path('extensions-contrib/kubernetes-overlord-extensions/target/surefire-reports')
+          for test_class in (
+              'org.apache.druid.k8s.overlord.common.KubernetesOverlordUtilsTest',
+              'org.apache.druid.k8s.overlord.taskadapter.PodTemplateTaskAdapterTest',
+          ):
+              suite = ET.parse(reports / f'TEST-{test_class}.xml').getroot()
+              assert int(suite.attrib['tests']) > 0, f'{test_class} ran no tests'
+              for result in ('failures', 'errors', 'skipped'):
+                  assert int(suite.attrib.get(result, 0)) == 0, f'{test_class}: {result}'
+          PY
+      - name: Save test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubernetes-label-test-reports
+          path: extensions-contrib/kubernetes-overlord-extensions/target/surefire-reports/
+          if-no-files-found: ignore
