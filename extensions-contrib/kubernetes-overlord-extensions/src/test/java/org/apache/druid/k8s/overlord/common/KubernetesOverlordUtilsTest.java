@@ -19,6 +19,7 @@
 
 package org.apache.druid.k8s.overlord.common;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,6 +45,50 @@ public class KubernetesOverlordUtilsTest
   public void test_nullLabel()
   {
     Assert.assertEquals("", KubernetesOverlordUtils.convertStringToK8sLabel(null));
+  }
+
+  @Test
+  public void test_emptyAndPunctuationOnlyLabels()
+  {
+    Assert.assertEquals("", KubernetesOverlordUtils.convertStringToK8sLabel(""));
+    Assert.assertEquals("", KubernetesOverlordUtils.convertStringToK8sLabel("_.-_.-"));
+    Assert.assertEquals("", KubernetesOverlordUtils.convertStringToK8sLabel(" /:!? "));
+  }
+
+  @Test
+  public void test_historicalBackfillDatasourceLabel()
+  {
+    Assert.assertEquals(
+        "historical_backfill_stage_1_buffer_tracker_stats_123__20200101",
+        KubernetesOverlordUtils.convertStringToK8sLabel(
+            "historical_backfill_stage_1_buffer_tracker_stats_123__20200101_0123456789ab"
+        )
+    );
+  }
+
+  @Test
+  public void test_stripPunctuationExposedByTruncation()
+  {
+    String prefix = StringUtils.repeat("a", 62);
+    for (String punctuation : new String[]{"_", "-", "."}) {
+      Assert.assertEquals(
+          prefix,
+          KubernetesOverlordUtils.convertStringToK8sLabel(prefix + punctuation + "suffix")
+      );
+    }
+    Assert.assertEquals(
+        StringUtils.repeat("a", 60),
+        KubernetesOverlordUtils.convertStringToK8sLabel(StringUtils.repeat("a", 60) + "_.-suffix")
+    );
+  }
+
+  @Test
+  public void test_preserveValidLongLabelAndStripBeforeTruncation()
+  {
+    String prefix = StringUtils.repeat("a", 63);
+    Assert.assertEquals(prefix, KubernetesOverlordUtils.convertStringToK8sLabel(prefix + "suffix"));
+    Assert.assertEquals(prefix, KubernetesOverlordUtils.convertStringToK8sLabel("_.-" + prefix + "suffix"));
+    Assert.assertEquals(prefix, KubernetesOverlordUtils.convertStringToK8sLabel(prefix));
   }
 
   @Test
