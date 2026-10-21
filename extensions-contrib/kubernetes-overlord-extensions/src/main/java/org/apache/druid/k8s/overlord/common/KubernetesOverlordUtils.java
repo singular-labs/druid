@@ -36,7 +36,7 @@ public class KubernetesOverlordUtils
   public static String convertStringToK8sLabel(String rawString)
   {
     String trimmedString = rawString == null ? "" : RegExUtils.replaceAll(rawString, K8S_LABEL_PATTERN, "");
-    return StringUtils.stripEnd(StringUtils.left(StringUtils.strip(trimmedString, "_.-"), 63), "_.-");
+    return StringUtils.left(StringUtils.strip(trimmedString, "_.-"), 63);
 
   }
 
